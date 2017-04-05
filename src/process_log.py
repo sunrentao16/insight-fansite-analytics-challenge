@@ -5,41 +5,62 @@
 import get_info
 
 # read data -------------------------------------
-import os 
-os.chdir('..') # set working dictionary
+# import os 
+# os.chdir('..') # set working dictionary
 log = open("log_input/log.txt","r")
 data=log.readlines() # raw data
     
 # feature 1 ----------------------------------
 def find_active_host( data ):
-    from collections import Counter # use Counter to find top active hosts
+#    from collections import Counter # use Counter to sort and find top active hosts
     num_top=10 # set the number of top active hosts
     # compute occurrences 
-    counts=dict() # use dictionary data structure
+    counts=dict() # use dictionary data structure; key is host; value is num of visits
     for line in data:
         key = get_info.get_host(line)
         counts[key] = counts.get(key,0) + 1
     # find most active host
-    active_host = Counter(counts)
+#    active_host = Counter(counts)
+#    for host, v in active_host.most_common(num_top):
+    active_host = dict()
+    for host, v in counts.iteritems():
+        if len(active_host) < num_top:
+            active_host[host] = v
+        elif v > min(active_host.values()):
+            # replace the min in active_host by new host
+            # this part can be more efficient if use min heap.
+            active_host.pop(min(active_host, key = active_host.get))
+            active_host[host] = v
+    # document most active hosts
     text_file = open("log_output/hosts.txt",'w')
-    for host, v in active_host.most_common(num_top):
-        text_file.write( "%s,%d\n" % (host,v))
+    for host in sorted(active_host, key=active_host.get, reverse=True):
+        text_file.write( "%s,%d\n" % (host, active_host[host]))
     text_file.close()
 
 # feature 2--------------------------------------
 def find_popular_resource( data ):
-    from collections import Counter # use Counter to find top popular resource
+#    from collections import Counter # use Counter to find top popular resource
     num_top=10 # set the number of most popular resource
     # compute occurrences 
     bandwidth=dict() # use dictionary data structure
     for line in data:
         key=get_info.get_resource(line)
         bandwidth[key] = bandwidth.get(key,0) + get_info.get_byte(line)
+        
     # find most popular resource
-    popular_resource = Counter(bandwidth)
+#    popular_resource = Counter(bandwidth)
+    popular_resource = dict()
+    for resource, v in bandwidth.iteritems():
+        if len(popular_resource) < num_top:
+            popular_resource[resource] = v
+        elif v > min(popular_resource.values()):
+            popular_resource.pop(min(popular_resource, key = popular_resource.get))
+            popular_resource[resource] = v
+
+    # document most popular resource
     text_file = open("log_output/resources.txt",'w')
-    for resource, v in popular_resource.most_common(num_top):
-        text_file.write( "%s\n" % (resource))
+    for re in sorted(popular_resource, key = popular_resource.get, reverse=True):
+        text_file.write( "%s\n" % (re))
     text_file.close()  
 
 # feature 3-----------------------------------------
@@ -70,7 +91,17 @@ def find_busiest_time( data ):
                 if q.empty():
                     break
             q.put(raw_time) # enque the new time
-    # note in above implement, last window can never enter results; problem! 
+            
+    # Note in above implement, the last window may not be able to enter results!
+    # So handle the last sliding window seperately; it's already in q
+    if q.queue[0] not in result:
+        if len(result) < num_top:
+            result[q.queue[0]] = result.get(q.queue[0], 0) + q.qsize()
+        elif q.qsize() > min(result.values()):
+            # replace the min of result by current period
+            result.pop(min(result, key = result.get))
+            result[q.queue[0]] = result.get(q.queue[0], 0) + q.qsize()
+    
     # sort result and write result in text file
     text_file = open("log_output/hours.txt",'w')
     for key in sorted(result, key=result.get, reverse=True):
@@ -140,6 +171,8 @@ def main():
 # call main function  
 main()
 # find_active_host(data)
+# find_popular_resource(data)
+# find_busiest_time(data)
 
 # test--------------------------------------------
 #
