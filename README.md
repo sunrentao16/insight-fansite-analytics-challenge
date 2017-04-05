@@ -16,6 +16,10 @@ I'm not actually using collections Modula. I initially used Counter function fro
 As the problem asks for only top 10 of hosts and resources, sorting is actually not necessary. So I can simply go over the lists and find the top 10 using min-heap, which can be more efficient than sorting the whole list.
 But if the number of top active hosts is changed to a large number that is comparable to the length of list, sorting method would be the same efficient.
 
+# get_info Modula
+Implemented get_info Modula, which contains functions to extract information from each line of log file.
+get_info Modula is under src/ folder. Import get_info Modula at the beginning of process_log.py.
+
 # Additional Feature
 This feature is similar to feature 3, but it finds the busiest 1 hour period starting from an event occurs.
 I believe this makes more sense, compared to feature 3. Because if using feature 3, once the busiest period is found, denoted by b_t, then the second busiest is
