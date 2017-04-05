@@ -5,8 +5,8 @@
 import get_info
 
 # read data -------------------------------------
-# import os 
-# os.chdir('..') # set working dictionary
+import os 
+os.chdir(os.path.abspath('.')) # set working dictionary
 log = open("log_input/log.txt","r")
 data=log.readlines() # raw data
     
@@ -66,46 +66,41 @@ def find_popular_resource( data ):
 # feature 3-----------------------------------------
 def find_busiest_time( data ):
     import datetime
-    import Queue
     num_top = 10 # number of busiest periods 
     time_delta = datetime.timedelta( minutes=60 ) # length of period considered; 60 min in this case
     result = dict() # contains 10 busiest periods and number of visits
-    q = Queue.Queue(0) # use a queue count number of visits in 60 mins period
-    for line in data:
-        raw_time = get_info.get_raw_time(line)
-        if q.empty():
-            q.put(raw_time)
-        elif get_info.get_time(raw_time) - get_info.get_time(q.queue[0]) <= time_delta:
-            q.put(raw_time)
-        else:
-            # queue contains more than 60 mins visits; store them in result if necessary
-            if len(result) < num_top: # result has less than 10 records
-                result[q.queue[0]] = result.get(q.queue[0], 0) + q.qsize()
-            elif q.qsize() > min(result.values()):
-                # replace the min of result by current period
-                result.pop(min(result, key = result.get))
-                result[q.queue[0]] = result.get(q.queue[0], 0) + q.qsize()
-            # delete the front of queue until queue only contains 60 min period
-            while get_info.get_time(raw_time) - get_info.get_time(q.queue[0]) > time_delta:
-                q.get()
-                if q.empty():
+    start_time = get_info.get_time(get_info.get_raw_time(data[0])) # initilize time
+    end_time_of_data = get_info.get_time(get_info.get_raw_time(data[len(data)-1])) # end time of data
+    queue_start = 0
+    queue_end = 0
+    while len(result) < num_top or start_time < end_time_of_data - time_delta :
+        # enqueue lines 
+        if queue_end < len(data) - 1 : # geurantee queue_end does Not reach the end of data
+            while get_info.get_time(get_info.get_raw_time(data[queue_end])) <= (start_time + time_delta):
+                queue_end +=1
+                if queue_end >= len(data)-1:
                     break
-            q.put(raw_time) # enque the new time
-            
-    # Note in above implement, the last window may not be able to enter results!
-    # So handle the last sliding window seperately; it's already in q
-    if q.queue[0] not in result:
+        if queue_end == len(data)-1:
+            # once reached end of data, queue_end always stay in sliding window
+            queue_end = len(data) 
+        # dequeue the front until it is in the sliding time window
+        while get_info.get_time(get_info.get_raw_time(data[queue_start])) < start_time:
+            queue_start += 1
+        # store busiest period into result
         if len(result) < num_top:
-            result[q.queue[0]] = result.get(q.queue[0], 0) + q.qsize()
-        elif q.qsize() > min(result.values()):
-            # replace the min of result by current period
+            result[start_time] = queue_end - queue_start
+        elif (queue_end - queue_start) > min(result.values()):
+            # replace min of result by new busy period
             result.pop(min(result, key = result.get))
-            result[q.queue[0]] = result.get(q.queue[0], 0) + q.qsize()
-    
+            result[start_time] = queue_end - queue_start
+        #
+        start_time += datetime.timedelta(seconds=1)
+        
     # sort result and write result in text file
     text_file = open("log_output/hours.txt",'w')
-    for key in sorted(result, key=result.get, reverse=True):
-        text_file.write("%s,%d\n" % (key, result[key]))
+    for key, v in sorted(result.iteritems(),  key=lambda(k, v): (-v, k)):
+        time = key.strftime('%d/%b/%Y:%H:%M:%S -0400') 
+        text_file.write("%s,%d\n" % (time, v))
     text_file.close()
 
 # feature 4 -----------------------------------------
@@ -176,6 +171,9 @@ main()
 
 # test--------------------------------------------
 #
-#test_log=open("my_test_log_input.txt", 'r')
-#test_data=test_log.readlines()
-#find_blocked(test_data)
+#test_log=open("insight_testsuite/tests/test_features/log_input/log.txt", 'r')
+#data=test_log.readlines()
+#main()
+#find_active_host(data)
+#find_popular_resource(data)
+#find_busiest_time(data)
