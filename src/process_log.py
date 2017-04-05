@@ -218,11 +218,3 @@ main()
 #find_busiest_time_event_occur(data)
 
 # test--------------------------------------------
-#
-#test_log=open("insight_testsuite/tests/test_features/log_input/log.txt", 'r')
-#data=test_log.readlines()
-#main()
-#find_active_host(data)
-#find_popular_resource(data)
-#find_busiest_time(data)
-#find_busiest_time_event_occur( data )
